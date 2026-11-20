@@ -1,1 +1,592 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>R2V Studio — NEXABOT Omni Flash</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0b0d12',
+            panel: '#121620',
+            card: '#181d2a',
+            line: '#262e42'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface text-slate-100 min-h-screen antialiased selection:bg-indigo-500/30">
+  <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4 bg-panel border border-line rounded-2xl p-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight">R2V Studio — NEXABOT Omni Flash</h1>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Reference-to-Video langsung dari galeri perangkat tanpa input URL media.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="keyBadge" class="text-xs px-3 py-1.5 rounded-xl bg-card border border-line text-amber-300">
+          API Key: belum terdeteksi
+        </span>
+        <button id="openSettingsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-medium transition cursor-pointer">
+          API Settings
+        </button>
+      </div>
+    </header>
 
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <!-- Left: Gallery Inputs & Prompt -->
+      <section class="lg:col-span-7 bg-panel border border-line rounded-2xl p-4 sm:p-5 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Video Gallery -->
+          <div class="bg-card border border-line rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label for="videoFileInput" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                1. Video Referensi (Galeri)
+              </label>
+              <span id="videoMeta" class="text-[11px] text-slate-400">Belum dipilih</span>
+            </div>
+            <input id="videoFileInput" type="file" accept="video/*" class="block w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/20 file:text-indigo-300 hover:file:bg-indigo-500/30 cursor-pointer" />
+            <div class="aspect-video rounded-lg bg-surface border border-line overflow-hidden flex items-center justify-center">
+              <video id="videoPreview" controls playsinline class="hidden w-full h-full object-contain"></video>
+              <span id="videoPlaceholder" class="text-xs text-slate-500">Preview video tampil di sini</span>
+            </div>
+          </div>
+
+          <!-- Image Gallery -->
+          <div class="bg-card border border-line rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label for="imageFileInput" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                2. Foto Subjek (Galeri)
+              </label>
+              <span id="imageMeta" class="text-[11px] text-slate-400">Belum dipilih</span>
+            </div>
+            <input id="imageFileInput" type="file" accept="image/*" class="block w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/20 file:text-indigo-300 hover:file:bg-indigo-500/30 cursor-pointer" />
+            <div class="aspect-video rounded-lg bg-surface border border-line overflow-hidden flex items-center justify-center">
+              <img id="imagePreview" alt="Preview foto subjek" class="hidden w-full h-full object-contain" />
+              <span id="imagePlaceholder" class="text-xs text-slate-500">Preview foto tampil di sini</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt -->
+        <div class="space-y-1.5">
+          <label for="promptInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Prompt Gerakan / Adegan
+          </label>
+          <textarea id="promptInput" rows="3" placeholder="Contoh: Subjek dari foto bergerak mengikuti alur gerakan video referensi dengan pencahayaan sinematik..." class="w-full rounded-xl bg-card border border-line px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <!-- Options -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-card border border-line rounded-xl p-3.5">
+          <div class="space-y-1">
+            <label for="modeSelect" class="block text-xs font-medium text-slate-300">Mode Eksekusi</label>
+            <select id="modeSelect" class="w-full rounded-lg bg-panel border border-line px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+              <option value="proxy">Proxy Backend (/api/nexabot)</option>
+              <option value="demo">Simulasi Demo (Tanpa API / Preview)</option>
+            </select>
+          </div>
+          <div class="flex items-end pb-1">
+            <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input id="autoCompressToggle" type="checkbox" class="rounded border-line bg-panel text-indigo-500 focus:ring-0" />
+              <span>Kompres otomatis di perangkat (opsional)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-3 pt-1">
+          <button id="generateBtn" type="button" class="flex-1 min-w-[160px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition cursor-pointer">
+            Generate Video
+          </button>
+          <button id="sampleBtn" type="button" class="py-2.5 px-3.5 rounded-xl bg-card hover:bg-slate-700/60 border border-line text-xs font-medium text-slate-200 transition cursor-pointer">
+            Isi Contoh Prompt
+          </button>
+          <button id="clearBtn" type="button" class="py-2.5 px-3.5 rounded-xl bg-card hover:bg-rose-950/50 border border-line text-xs font-medium text-rose-300 transition cursor-pointer">
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <!-- Right: Output & Logs -->
+      <section class="lg:col-span-5 bg-panel border border-line rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Hasil & Status</h2>
+            <span id="statusText" class="text-xs text-slate-400">Siap</span>
+          </div>
+
+          <div class="w-full bg-card rounded-full h-2 overflow-hidden border border-line">
+            <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+
+          <div id="resultBox" class="aspect-video rounded-xl bg-card border border-line flex flex-col items-center justify-center p-4 text-center">
+            <p id="resultPlaceholder" class="text-xs text-slate-400">Hasil video R2V akan muncul di sini setelah proses selesai.</p>
+            <video id="resultVideo" controls playsinline class="hidden w-full h-full rounded-lg object-contain"></video>
+          </div>
+
+          <div id="downloadWrap" class="hidden">
+            <a id="downloadLink" download="nexabot-r2v-result.mp4" class="block w-full text-center py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+              Unduh Hasil Video
+            </a>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Log Aktivitas</span>
+            <button id="clearLogBtn" type="button" class="text-[11px] text-slate-400 hover:text-slate-200 cursor-pointer">Bersihkan Log</button>
+          </div>
+          <pre id="logBox" class="h-44 overflow-y-auto rounded-xl bg-surface border border-line p-3 text-[11px] leading-relaxed text-slate-300 font-mono whitespace-pre-wrap"></pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- API Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
+    <div class="w-full max-w-md bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold">API Settings (NEXABOT)</h3>
+        <button id="closeSettingsBtn" type="button" class="text-slate-400 hover:text-white text-lg leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="apiKeyInput" class="block text-xs font-medium text-slate-300 mb-1">NEXABOT API Key (x-api-key)</label>
+          <input id="apiKeyInput" type="password" placeholder="Opsional jika sudah diset di ENV Vercel (NEXABOT_API_KEY)" class="w-full rounded-xl bg-card border border-line px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div>
+          <label for="proxyEndpointInput" class="block text-xs font-medium text-slate-300 mb-1">Proxy Endpoint</label>
+          <input id="proxyEndpointInput" type="text" value="/api/nexabot" class="w-full rounded-xl bg-card border border-line px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="baseUrlInput" class="block text-xs font-medium text-slate-300 mb-1">NEXABOT Base URL</label>
+            <input id="baseUrlInput" type="text" value="https://nexabot.id/api" class="w-full rounded-xl bg-card border border-line px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label for="modelInput" class="block text-xs font-medium text-slate-300 mb-1">Model</label>
+            <input id="modelInput" type="text" value="omni-flash-r2v" class="w-full rounded-xl bg-card border border-line px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="cancelSettingsBtn" type="button" class="px-4 py-2 rounded-xl bg-card hover:bg-slate-700/60 border border-line text-xs font-medium cursor-pointer">Batal</button>
+        <button id="saveSettingsBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'nexabot_r2v_config_v1';
+
+    const state = {
+      videoFile: null,
+      imageFile: null,
+      videoObjectUrl: null,
+      imageObjectUrl: null,
+      isRunning: false,
+    };
+
+    const el = {
+      videoFileInput: document.getElementById('videoFileInput'),
+      imageFileInput: document.getElementById('imageFileInput'),
+      videoPreview: document.getElementById('videoPreview'),
+      imagePreview: document.getElementById('imagePreview'),
+      videoPlaceholder: document.getElementById('videoPlaceholder'),
+      imagePlaceholder: document.getElementById('imagePlaceholder'),
+      videoMeta: document.getElementById('videoMeta'),
+      imageMeta: document.getElementById('imageMeta'),
+      promptInput: document.getElementById('promptInput'),
+      modeSelect: document.getElementById('modeSelect'),
+      autoCompressToggle: document.getElementById('autoCompressToggle'),
+      generateBtn: document.getElementById('generateBtn'),
+      sampleBtn: document.getElementById('sampleBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      statusText: document.getElementById('statusText'),
+      progressBar: document.getElementById('progressBar'),
+      resultPlaceholder: document.getElementById('resultPlaceholder'),
+      resultVideo: document.getElementById('resultVideo'),
+      downloadWrap: document.getElementById('downloadWrap'),
+      downloadLink: document.getElementById('downloadLink'),
+      logBox: document.getElementById('logBox'),
+      clearLogBtn: document.getElementById('clearLogBtn'),
+      keyBadge: document.getElementById('keyBadge'),
+      openSettingsBtn: document.getElementById('openSettingsBtn'),
+      settingsModal: document.getElementById('settingsModal'),
+      closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+      cancelSettingsBtn: document.getElementById('cancelSettingsBtn'),
+      saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+      apiKeyInput: document.getElementById('apiKeyInput'),
+      proxyEndpointInput: document.getElementById('proxyEndpointInput'),
+      baseUrlInput: document.getElementById('baseUrlInput'),
+      modelInput: document.getElementById('modelInput'),
+    };
+
+    function log(msg, level = 'INFO') {
+      const now = new Date().toLocaleTimeString('id-ID', { hour12: false });
+      el.logBox.textContent += `[${now}] [${level}] ${msg}\n`;
+      el.logBox.scrollTop = el.logBox.scrollHeight;
+    }
+
+    function setProgress(pct, statusLabel) {
+      el.progressBar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      if (statusLabel) el.statusText.textContent = statusLabel;
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes && bytes !== 0) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+      return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+    }
+
+    function cleanApiKey(raw) {
+      return (raw || '').replace(/^Bearer\s+/i, '').trim();
+    }
+
+    function loadConfig() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const cfg = raw ? JSON.parse(raw) : {};
+        el.apiKeyInput.value = cleanApiKey(cfg.apiKey || '');
+        el.proxyEndpointInput.value = cfg.proxyEndpoint || '/api/nexabot';
+        el.baseUrlInput.value = cfg.baseUrl || 'https://nexabot.id/api';
+        el.modelInput.value = cfg.model || 'omni-flash-r2v';
+      } catch {
+        // ignore storage error
+      }
+      updateKeyBadge();
+    }
+
+    function saveConfig() {
+      const cfg = {
+        apiKey: cleanApiKey(el.apiKeyInput.value),
+        proxyEndpoint: (el.proxyEndpointInput.value || '/api/nexabot').trim(),
+        baseUrl: (el.baseUrlInput.value || 'https://nexabot.id/api').trim(),
+        model: (el.modelInput.value || 'omni-flash-r2v').trim(),
+      };
+      el.apiKeyInput.value = cfg.apiKey;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+      } catch {
+        // ignore storage error
+      }
+      updateKeyBadge();
+      closeModal();
+      log('Konfigurasi API Settings disimpan.');
+    }
+
+    function updateKeyBadge() {
+      const key = cleanApiKey(el.apiKeyInput.value);
+      if (key) {
+        const masked = key.length > 8 ? `${key.slice(0, 4)}...${key.slice(-4)}` : 'terpasang';
+        el.keyBadge.textContent = `API Key: ${masked}`;
+        el.keyBadge.className = 'text-xs px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300';
+      } else {
+        el.keyBadge.textContent = 'API Key: belum terdeteksi (pakai ENV server / Demo)';
+        el.keyBadge.className = 'text-xs px-3 py-1.5 rounded-xl bg-card border border-line text-amber-300';
+      }
+    }
+
+    function openModal() {
+      el.settingsModal.classList.remove('hidden');
+      el.settingsModal.classList.add('flex');
+    }
+
+    function closeModal() {
+      el.settingsModal.classList.add('hidden');
+      el.settingsModal.classList.remove('flex');
+    }
+
+    function fileToDataUrl(fileOrBlob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Gagal membaca file ke Data URI.'));
+        reader.readAsDataURL(fileOrBlob);
+      });
+    }
+
+    async function compressImageIfRequested(file) {
+      if (!el.autoCompressToggle.checked) return file;
+      return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const maxSide = 720;
+          let { width, height } = img;
+          if (width > maxSide || height > maxSide) {
+            if (width > height) {
+              height = Math.round((height * maxSide) / width);
+              width = maxSide;
+            } else {
+              width = Math.round((width * maxSide) / height);
+              height = maxSide;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.82);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(file);
+        };
+        img.src = url;
+      });
+    }
+
+    el.videoFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (state.videoObjectUrl) URL.revokeObjectURL(state.videoObjectUrl);
+      state.videoFile = file;
+      state.videoObjectUrl = URL.createObjectURL(file);
+      el.videoPreview.src = state.videoObjectUrl;
+      el.videoPreview.classList.remove('hidden');
+      el.videoPlaceholder.classList.add('hidden');
+      el.videoMeta.textContent = formatBytes(file.size);
+      log(`Video galeri dipilih: ${file.name} (${formatBytes(file.size)})`);
+    });
+
+    el.imageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (state.imageObjectUrl) URL.revokeObjectURL(state.imageObjectUrl);
+      state.imageFile = file;
+      state.imageObjectUrl = URL.createObjectURL(file);
+      el.imagePreview.src = state.imageObjectUrl;
+      el.imagePreview.classList.remove('hidden');
+      el.imagePlaceholder.classList.add('hidden');
+      el.imageMeta.textContent = formatBytes(file.size);
+      log(`Foto galeri dipilih: ${file.name} (${formatBytes(file.size)})`);
+    });
+
+    el.sampleBtn.addEventListener('click', () => {
+      el.promptInput.value = 'Karakter pada foto referensi melakukan gerakan sesuai video referensi dengan pencahayaan sinematik lembut dan transisi mulus.';
+      log('Contoh prompt diisi.');
+    });
+
+    el.clearBtn.addEventListener('click', () => {
+      state.videoFile = null;
+      state.imageFile = null;
+      if (state.videoObjectUrl) URL.revokeObjectURL(state.videoObjectUrl);
+      if (state.imageObjectUrl) URL.revokeObjectURL(state.imageObjectUrl);
+      state.videoObjectUrl = null;
+      state.imageObjectUrl = null;
+      el.videoFileInput.value = '';
+      el.imageFileInput.value = '';
+      el.videoPreview.removeAttribute('src');
+      el.imagePreview.removeAttribute('src');
+      el.videoPreview.classList.add('hidden');
+      el.imagePreview.classList.add('hidden');
+      el.videoPlaceholder.classList.remove('hidden');
+      el.imagePlaceholder.classList.remove('hidden');
+      el.videoMeta.textContent = 'Belum dipilih';
+      el.imageMeta.textContent = 'Belum dipilih';
+      el.promptInput.value = '';
+      el.resultVideo.classList.add('hidden');
+      el.resultPlaceholder.classList.remove('hidden');
+      el.downloadWrap.classList.add('hidden');
+      setProgress(0, 'Siap');
+      log('Input dan pratinjau direset.');
+    });
+
+    el.clearLogBtn.addEventListener('click', () => {
+      el.logBox.textContent = '';
+    });
+
+    el.openSettingsBtn.addEventListener('click', openModal);
+    el.closeSettingsBtn.addEventListener('click', closeModal);
+    el.cancelSettingsBtn.addEventListener('click', closeModal);
+    el.saveSettingsBtn.addEventListener('click', saveConfig);
+    el.apiKeyInput.addEventListener('input', updateKeyBadge);
+
+    async function runDemoFlow() {
+      log('Menjalankan mode Simulasi Demo...');
+      setProgress(25, 'Membaca file galeri...');
+      await new Promise((r) => setTimeout(r, 500));
+      setProgress(60, 'Mensimulasikan proses R2V...');
+      await new Promise((r) => setTimeout(r, 700));
+      setProgress(100, 'Selesai (Simulasi)');
+
+      if (state.videoObjectUrl) {
+        el.resultVideo.src = state.videoObjectUrl;
+        el.resultVideo.classList.remove('hidden');
+        el.resultPlaceholder.classList.add('hidden');
+        el.downloadLink.href = state.videoObjectUrl;
+        el.downloadWrap.classList.remove('hidden');
+      } else {
+        el.resultPlaceholder.textContent = 'Simulasi selesai. Pilih video galeri untuk melihat pratinjau hasil.';
+      }
+      log('Simulasi demo selesai. Untuk render NEXABOT asli, deploy ke Vercel dengan /api/nexabot.');
+    }
+
+    async function runProxyFlow() {
+      const proxyPath = (el.proxyEndpointInput.value || '/api/nexabot').trim();
+      const isSandbox = window.location.hostname.includes('scf.usercontent.goog');
+
+      if (isSandbox && proxyPath.startsWith('/')) {
+        throw new Error('Halaman berada di sandbox preview tanpa backend /api/nexabot. Gunakan mode Simulasi Demo atau deploy ke Vercel.');
+      }
+
+      setProgress(20, 'Menyiapkan media...');
+      const finalImage = await compressImageIfRequested(state.imageFile);
+      const [videoDataUri, imageDataUri] = await Promise.all([
+        fileToDataUrl(state.videoFile),
+        fileToDataUrl(finalImage),
+      ]);
+
+      const apiKey = cleanApiKey(el.apiKeyInput.value);
+      const payload = {
+        model: (el.modelInput.value || 'omni-flash-r2v').trim(),
+        prompt: el.promptInput.value.trim(),
+        media: [videoDataUri, imageDataUri],
+      };
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) {
+        headers['x-api-key'] = apiKey;
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      setProgress(45, 'Mengirim ke proxy NEXABOT...');
+      log(`POST ${proxyPath} ...`);
+
+      const submitRes = await fetch(proxyPath, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'submit',
+          baseUrl: (el.baseUrlInput.value || 'https://nexabot.id/api').trim(),
+          endpointPath: '/v1/videos/r2v',
+          apiKey,
+          payload,
+        }),
+      });
+
+      const submitData = await submitRes.json().catch(() => ({}));
+      if (!submitRes.ok) {
+        throw new Error(submitData?.error || submitData?.message || `Submit gagal (${submitRes.status})`);
+      }
+
+      const taskId = submitData?.id || submitData?.task_id || submitData?.data?.id || submitData?.data?.task_id;
+      const directUrl = submitData?.video_url || submitData?.output_url || submitData?.data?.video_url || submitData?.data?.output_url;
+
+      if (directUrl) {
+        setProgress(100, 'Selesai');
+        el.resultVideo.src = directUrl;
+        el.resultVideo.classList.remove('hidden');
+        el.resultPlaceholder.classList.add('hidden');
+        el.downloadLink.href = directUrl;
+        el.downloadWrap.classList.remove('hidden');
+        log('Video berhasil dibuat.');
+        return;
+      }
+
+      if (!taskId) {
+        log(`Respons diterima: ${JSON.stringify(submitData).slice(0, 400)}`);
+        setProgress(100, 'Respons diterima');
+        return;
+      }
+
+      log(`Task ID: ${taskId}. Memulai polling status...`);
+      for (let attempt = 1; attempt <= 60; attempt++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        setProgress(Math.min(95, 50 + attempt), `Polling status (#${attempt})...`);
+
+        const statusRes = await fetch(proxyPath, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            action: 'status',
+            baseUrl: (el.baseUrlInput.value || 'https://nexabot.id/api').trim(),
+            statusPath: '/v1/videos/r2v/{id}',
+            apiKey,
+            taskId,
+          }),
+        });
+
+        const statusData = await statusRes.json().catch(() => ({}));
+        const statusVal = String(statusData?.status || statusData?.data?.status || '').toLowerCase();
+        const resultUrl = statusData?.video_url || statusData?.output_url || statusData?.data?.video_url || statusData?.data?.output_url;
+
+        if (resultUrl || statusVal === 'completed' || statusVal === 'succeeded' || statusVal === 'done') {
+          if (resultUrl) {
+            el.resultVideo.src = resultUrl;
+            el.resultVideo.classList.remove('hidden');
+            el.resultPlaceholder.classList.add('hidden');
+            el.downloadLink.href = resultUrl;
+            el.downloadWrap.classList.remove('hidden');
+          }
+          setProgress(100, 'Selesai');
+          log('Render video R2V selesai!');
+          return;
+        }
+
+        if (statusVal === 'failed' || statusVal === 'error') {
+          throw new Error(statusData?.error || statusData?.message || 'Proses render di NEXABOT gagal.');
+        }
+      }
+
+      throw new Error('Polling melewati batas waktu tunggu.');
+    }
+
+    el.generateBtn.addEventListener('click', async () => {
+      if (state.isRunning) return;
+
+      const prompt = el.promptInput.value.trim();
+      if (!prompt) {
+        log('Prompt masih kosong.', 'WARN');
+        el.promptInput.focus();
+        return;
+      }
+
+      if (el.modeSelect.value === 'proxy' && (!state.videoFile || !state.imageFile)) {
+        log('Pilih video referensi dan foto subjek dari galeri terlebih dahulu.', 'WARN');
+        return;
+      }
+
+      state.isRunning = true;
+      el.generateBtn.disabled = true;
+      el.generateBtn.classList.add('opacity-60');
+
+      try {
+        if (el.modeSelect.value === 'demo') {
+          await runDemoFlow();
+        } else {
+          await runProxyFlow();
+        }
+      } catch (err) {
+        setProgress(0, 'Gagal');
+        log(err?.message || 'Terjadi kesalahan saat generate.', 'ERROR');
+      } finally {
+        state.isRunning = false;
+        el.generateBtn.disabled = false;
+        el.generateBtn.classList.remove('opacity-60');
+      }
+    });
+
+    loadConfig();
+    log('R2V Studio siap digunakan.');
+  </script>
+</body>
+</html>
